@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "plate-v*"
+      - "pour-v*"
+
+jobs:
+  evaluate-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # for OIDC-to-cloud auth when we wire it up
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for scorecard git-sha
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install deps
+        run: |
+          uv venv
+          uv pip install --index-strategy unsafe-best-match \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -e ".[serve,dev,track]"
+
+      - name: Parse tag
+        id: tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          TASK="${TAG%-v*}"
+          VERSION="${TAG#*-v}"
+          echo "task=$TASK" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # Full eval + scorecard upload lands when real checkpoints exist.
+      # For now the release job proves the tag-parsing + env wiring works.
+      - name: Placeholder eval
+        env:
+          TASK: ${{ steps.tag.outputs.task }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          . .venv/bin/activate
+          echo "would evaluate $TASK @ $VERSION against bench/v0"
+          pytest -ra
