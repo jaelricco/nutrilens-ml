@@ -12,10 +12,11 @@ venv/
 *.pem
 *.p8
 
-# ML artifacts — too large or non-deterministic for git
-data/
-runs/
-checkpoints/
+# ML artifacts — too large or non-deterministic for git. Anchored at repo root
+# so we don't accidentally ignore src/nutrilens_ml/data/ etc.
+/data/
+/runs/
+/checkpoints/
 *.ckpt
 *.pt
 *.pth
