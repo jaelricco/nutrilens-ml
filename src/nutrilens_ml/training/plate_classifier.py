@@ -114,10 +114,12 @@ def train_classifier(
 
         if top1 > best_top1:
             best_top1 = top1
+            cfg_dict = asdict(cfg)
+            cfg_dict["run_dir"] = str(cfg_dict["run_dir"])
             torch.save(
                 {
                     "model": model.state_dict(),
-                    "cfg": asdict(cfg),
+                    "cfg": cfg_dict,
                     "epoch": epoch,
                     "top1": top1,
                     "top5": top5,
