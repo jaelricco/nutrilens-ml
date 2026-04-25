@@ -35,10 +35,23 @@ def export_to_onnx(
     out_path: Path,
     *,
     input_names: tuple[str, ...] = ("image",),
-    output_names: tuple[str, ...] = ("boxes", "labels", "scores", "masks"),
-    opset: int = 17,
+    output_names: tuple[str, ...] = ("logits",),
+    opset: int = 18,
+    dynamic_axes: dict[str, dict[int, str]] | None = None,
 ) -> Path:
+    """Export to ONNX via the legacy (TorchScript) exporter.
+
+    `dynamic_axes` defaults to `{input: {0: "batch"}}` — safe for both the
+    classifier (fixed C=3, H=224, W=224) and any model with a free batch
+    dim. Override for the detector to also free the spatial dims.
+
+    `dynamo=False` keeps the legacy exporter which respects `dynamic_axes`
+    and is more stable for our model graphs than torch>=2.10's dynamo
+    exporter.
+    """
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    if dynamic_axes is None:
+        dynamic_axes = {input_names[0]: {0: "batch"}}
     model.eval()
     torch.onnx.export(
         model,
@@ -48,7 +61,8 @@ def export_to_onnx(
         output_names=list(output_names),
         opset_version=opset,
         do_constant_folding=True,
-        dynamic_axes={"image": {0: "H", 1: "W"}},
+        dynamic_axes=dynamic_axes,
+        dynamo=False,
     )
     return out_path
 
