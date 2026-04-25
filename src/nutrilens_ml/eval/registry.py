@@ -43,9 +43,24 @@ class ModelManifest:
 
 
 def _client(endpoint: str | None, region: str) -> BaseClient:
+    """Build an S3 / R2 client.
+
+    Reads `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` from the environment
+    (project convention from `Settings`), falling back to boto3's default
+    credential chain (`AWS_*` env, instance metadata, etc.) when those are
+    unset.
+    """
+    import os
+
     import boto3
 
-    return boto3.client("s3", endpoint_url=endpoint, region_name=region)
+    return boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        region_name=region,
+        aws_access_key_id=os.environ.get("S3_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("S3_SECRET_ACCESS_KEY"),
+    )
 
 
 def upload_model(
